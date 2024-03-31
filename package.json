@@ -1,0 +1,19 @@
+{
+  "name": "namaztimescapper",
+  "version": "1.0.0",
+  "description": "Scape Salat Timings & Details from islamicfinder.org",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "test": "node test.js"
+  },
+  "keywords": [
+    "namaztiming"
+  ],
+  "author": "Sihan",
+  "license": "ISC",
+  "dependencies": {
+    "line-reader": "^0.4.0",
+    "puppeteer": "^13.4.0"
+  }
+}
