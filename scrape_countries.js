@@ -4,6 +4,8 @@ const puppeteer = require("puppeteer");
 const https = require("https");
 
 const countries = "https://www.islamicfinder.org/world/";
+const flag_base_url =
+  "https://raw.githubusercontent.com/lipis/flag-icons/05059f9cde4a872f1692cb017abb1140e9aceae9/flags/4x3";
 
 const scrapeCountries = async () => {
   const browser = await puppeteer.launch({ headless: true }); // if need debugging, headless = true
@@ -41,7 +43,7 @@ const scrapeCountries = async () => {
         let href =
           "https://www.islamicfinder.org" + anchorNode.getAttribute("href");
         let flag = flagUrl.substring(5, flagUrl.length - 2);
-        let slug = flag.split("/").pop().substring(0, 2).toUpperCase();
+        let slug = flag.split("/").pop().substring(0, 2);
 
         countriesByContinents[currentContinent].push({
           name,
@@ -61,32 +63,29 @@ const scrapeCountries = async () => {
     JSON.stringify(scrapedCountriesByContinents)
   );
 
-  // Get Flag Images
-  const flagImages = await tab.$$eval(
-    "#all-countries div div span",
-    (nodes) => {
-      return nodes.map((node) => {
-        let styles = window.getComputedStyle(node);
-        let flagUrl = styles.backgroundImage;
-        return flagUrl.substring(5, flagUrl.length - 2);
+  // Create flags folder if not exists
+  if (!syncfs.existsSync(path.join(__dirname, `flags`))) {
+    syncfs.mkdirSync(path.join(__dirname, `flags`));
+  }
+
+  // Download flag image
+  // npm install flag-icons
+  // From "https://github.com/lipis/flag-icons/tree/main/flags";
+  for (const continent of Object.keys(scrapedCountriesByContinents)) {
+    let countries = scrapedCountriesByContinents[continent];
+    for (const country of countries) {
+      let fileName = country.slug + ".svg";
+      https.get(`${flag_base_url}/${fileName}`, (res) => {
+        const stream = syncfs.createWriteStream(
+          path.join(__dirname, `flags/${fileName}`)
+        );
+        res.pipe(stream);
+        stream.on("finish", () => {
+          stream.close();
+        });
       });
     }
-  );
-  //Download Flag Images
-  if (!syncfs.existsSync(path.join(__dirname, "flags"))) {
-    syncfs.mkdirSync(path.join(__dirname, "flags"));
   }
-  flagImages.forEach((url) => {
-    https.get(url, (res) => {
-      const stream = syncfs.createWriteStream(
-        `${path.join(__dirname, "flags")}/${url.split("/").pop()}`
-      );
-      res.pipe(stream);
-      stream.on("finish", () => {
-        stream.close();
-      });
-    });
-  });
 
   await browser.close();
 };
